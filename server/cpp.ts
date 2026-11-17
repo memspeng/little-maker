@@ -77,6 +77,7 @@ async function handler(req: IncomingMessage, res: ServerResponse, next: () => vo
   let directory: string | undefined;
   try {
     if (url === '/api/compiler') { const found = await compiler(controller.signal); return reply(200, { version: found.version }); }
+    req.setEncoding('utf8'); // Preserve Chinese characters split across network chunks.
     let body = '';
     for await (const chunk of req) {
       body += chunk.toString();

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { catalog } from '../src/catalog';
+import { request as httpRequest } from 'node:http';
 async function open(page: Page, title: string, language: string, problems = false) {
   await page.getByRole('button', { name: '项目与题库', exact: true }).click();
   if (problems) await page.getByRole('button', { name: '算法练习 · 8' }).click();
@@ -96,3 +97,16 @@ for (const unit of catalog.filter(item => item.kind === 'problem')) {
     await expect(page.getByRole('status').first()).toContainText(`${unit.cases!.length} / ${unit.cases!.length} 通过`, { timeout: 60000 });
   });
 }
+
+test('native request preserves Chinese split across transport chunks', async () => {
+  const body = Buffer.from(JSON.stringify({ code: '#include <iostream>\nint main(){std::cout << "中文";}', inputs: [''] }));
+  const split = body.indexOf(Buffer.from('中')) + 1;
+  const result = await new Promise<string>((resolve, reject) => {
+    const request = httpRequest('http://127.0.0.1:5173/api/cpp', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Little-Maker': 'local-workshop' } }, response => {
+      response.setEncoding('utf8'); let text = ''; response.on('data', chunk => text += chunk); response.on('end', () => resolve(text));
+    });
+    request.on('error', reject); request.write(body.subarray(0, split));
+    setTimeout(() => request.end(body.subarray(split)), 30);
+  });
+  expect(JSON.parse(result).results[0].output).toBe('中文');
+});
