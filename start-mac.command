@@ -5,7 +5,7 @@ if ! command -v node >/dev/null 2>&1; then
   read -r -p "按回车关闭…"
   exit 1
 fi
-if [ ! -d node_modules ] || [ ! -f public/python/pyodide.asm.wasm ]; then
+if [ ! -d node_modules ] || [ ! -f public/python/stdlib.data ]; then
   npm ci || { read -r -p "安装失败，请检查网络。按回车关闭…"; exit 1; }
 fi
 npm run dev -- --open

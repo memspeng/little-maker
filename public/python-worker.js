@@ -14,10 +14,15 @@ onmessage = async ({ data }) => {
     inputBytes = new Uint8Array(data.input, 8);
     outputSize = 0;
     const { loadPyodide } = await import('/python/pyodide.mjs');
-    python = await loadPyodide({ indexURL: '/python/' });
-    python.setStdout({ write: bytes => { output(new TextDecoder().decode(bytes)); return bytes.length; } });
+    python = await loadPyodide({ indexURL: '/python/', stdLibURL: '/python/stdlib.data' });
+    const decoder = new TextDecoder();
+    python.setStdout({ write: bytes => { output(decoder.decode(bytes, { stream: true })); return bytes.length; } });
     python.setStderr({ write: bytes => { output(new TextDecoder().decode(bytes)); return bytes.length; } });
+    const lines = (data.stdin || '').replace(/\r\n/g, '\n').split('\n');
+    if (lines.at(-1) === '') lines.pop();
+    let lineIndex = 0;
     python.setStdin({ stdin: () => {
+      if (data.batch) return lineIndex < lines.length ? lines[lineIndex++] : undefined;
       postMessage({ type: 'input' });
       Atomics.wait(inputState, 0, 0);
       const value = new TextDecoder().decode(inputBytes.slice(0, Atomics.load(inputState, 1)));

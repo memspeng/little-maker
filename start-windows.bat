@@ -9,7 +9,7 @@ if errorlevel 1 (
 )
 if not exist node_modules call npm ci
 if errorlevel 1 goto failed
-if not exist public\python\pyodide.asm.wasm call npm ci
+if not exist public\python\stdlib.data call npm ci
 if errorlevel 1 goto failed
 call npm run dev -- --open
 pause
